@@ -1,0 +1,95 @@
+const express = require("express");
+const { MongoClient } = require("mongodb");
+const app = express();
+const port = 3000;
+const mongoUrl = "mongodb://127.0.0.1:27017/freeswitch";
+const dbName = "freeswitch";
+
+// Middleware to set XML content type
+app.use(express.urlencoded());
+
+// MongoDB connection
+let db;
+MongoClient.connect(mongoUrl, { useUnifiedTopology: true })
+    .then((client) => {
+        db = client.db(dbName);
+        console.log("Connected to MongoDB");
+    })
+    .catch((err) => {
+        console.error("MongoDB connection error:", err);
+        process.exit(1);
+    });
+
+// Handle mod_xml_curl POST
+app.post("/", async (req, res) => {
+    
+    console.log("POST request to API");
+    console.log(req.body);
+
+    const section = req.body.section;
+    const key_value = req.body.key_value;
+
+    console.log(req.body.sip_auth_realm)
+
+    if (section === "directory") {
+        tenant = await db.collection("tenants").findOne({ domain_name: req.body.domain });        
+    }
+
+
+    try {
+        if (!db) {
+            throw new Error("MongoDB not connected");
+        }
+
+        // Find tenant by domain_name
+        // const tenant = await db.collection("tenants").findOne({ domain_name: domain });
+        if (!tenant) {
+            return res.send('<document type="freeswitch/xml"/>');
+        }
+
+        if (section === "directory") {
+
+            } else {
+                res.send('<document type="freeswitch/xml"/>');
+            }
+        } else if (section === "dialplan") {
+            // Dialplan lookup
+            const rules = tenant.dialplan.default || [];
+
+            // Log call to console
+            console.log("-----------------Dialplan query------------------" );
+            console.log("User: " + req.body.variable_sip_from_uri + " Dialed: " + req.body["Caller-Destination-Number"])
+        
+
+            let xml = '<document type="freeswitch/xml"><section name="dialplan"><context name="default">';
+
+            switch(req.body["Caller-Destination-Number"]){
+                case("*98"):
+                console.log("Accessing Voicemail")
+                    xml += `<extension name="check_voicemail"><condition field="destination_number" expression="^\\*98$"><action application="answer"/><action application="sleep" data="1000"/><action application="voicemail" data="check default ${tenant.domain_name}"/></condition></extension>`
+                
+            }
+            for (const rule of rules) {
+        //         xml += `
+        // //   <extension name="${rule.destination_number}">
+        // //     <condition field="destination_number" expression="^${rule.destination_number}$">
+        // //       <action application="${rule.action_application}" data="${rule.action_data}"/>
+        // //     </condition>
+        // //   </extension>
+        // `;
+            }
+            xml += "</context></section></document>";
+            console.log("Dialplan XML:" + xml)
+            res.send(xml);
+        } else {
+            res.send('<document type="freeswitch/xml"/>');
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('<document type="freeswitch/xml"/>');
+    }
+});
+
+app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+});
