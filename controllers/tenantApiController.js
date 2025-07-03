@@ -687,6 +687,158 @@ const tenantApiController = {
       }
       res.status(500).json({ error: 'Failed to delete group' });
     }
+  },
+
+    /**
+   * @api {get} /api/tenants/:domain_name/dids Get All DIDs for a Tenant
+   * @apiName GetDids
+   * @apiGroup DIDs
+   * @apiDescription Retrieves all DIDs associated with a specific tenant.
+   * @apiParam {String} domain_name Domain name of the tenant.
+   * @apiSuccess {Object[]} dids Array of DID objects.
+   * @apiSuccessExample {json} Success-Response:
+   * HTTP/1.1 200 OK
+   * [
+   * { "did_number": "18005551212", "destination": "1001", "description": "Main line", ... },
+   * { "did_number": "18005551213", "destination": "sales_hunt", "description": "Sales line", ... }
+   * ]
+   * @apiError (404 Not Found) TenantNotFound The tenant with the specified `domain_name` was not found.
+   * @apiError (500 Internal Server Error) ServerError An error occurred on the server.
+   */
+  getDids: async (req, res) => {
+    try {
+      const dids = await tenantService.getDids(req.params.domain_name);
+      if (dids === null) {
+        return res.status(404).json({ error: 'Tenant not found' });
+      }
+      res.status(200).json(dids);
+    } catch (error) {
+      console.error('API Error: Get Tenant DIDs', error);
+      res.status(500).json({ error: 'Failed to retrieve DIDs' });
+    }
+  },
+
+  /**
+   * @api {get} /api/tenants/:domain_name/dids/:did_number Get Specific DID
+   * @apiName GetDid
+   * @apiGroup DIDs
+   * @apiDescription Retrieves a single DID by `did_number` for a given tenant.
+   * @apiParam {String} domain_name Domain name of the tenant.
+   * @apiParam {String} did_number The DID number to retrieve.
+   * @apiSuccess {Object} did The DID object.
+   * @apiSuccessExample {json} Success-Response:
+   * HTTP/1.1 200 OK
+   * { "did_number": "18005551212", "destination": "1001", "description": "Main line", ... }
+   * @apiError (404 Not Found) NotFound The tenant or DID was not found.
+   * @apiError (500 Internal Server Error) ServerError An error occurred on the server.
+   */
+  getDid: async (req, res) => {
+    try {
+      const did = await tenantService.getDid(req.params.domain_name, req.params.did_number);
+      if (!did) {
+        return res.status(404).json({ error: 'DID not found' });
+      }
+      res.status(200).json(did);
+    } catch (error) {
+      console.error('API Error: Get Specific DID', error);
+      res.status(500).json({ error: 'Failed to retrieve DID' });
+    }
+  },
+
+  /**
+   * @api {post} /api/tenants/:domain_name/dids Add New DID
+   * @apiName AddDid
+   * @apiGroup DIDs
+   * @apiDescription Adds a new DID to a specified tenant.
+   * @apiParam {String} domain_name Domain name of the tenant.
+   * @apiParam {Object} didData DID data to add.
+   * @apiParam {String} didData.did_number Unique phone number for the DID.
+   * @apiParam {String} didData.destination The internal extension, group name, or other target for the DID.
+   * @apiParam {String} [didData.description] Optional description for the DID.
+   * @apiParamExample {json} Request-Example:
+   * {
+   * "did_number": "18005559999",
+   * "destination": "1005",
+   * "description": "DID for extension 1005"
+   * }
+   * @apiSuccess (201 Created) {Object} did The newly created DID object.
+   * @apiError (404 Not Found) TenantNotFound The tenant with the specified `domain_name` was not found.
+   * @apiError (409 Conflict) DIDExists A DID with the same `did_number` already exists for this tenant.
+   * @apiError (500 Internal Server Error) ServerError An error occurred on the server during DID addition.
+   */
+  addDid: async (req, res) => {
+    try {
+      const newDid = await tenantService.addDid(req.params.domain_name, req.body);
+      res.status(201).json(newDid);
+    } catch (error) {
+      console.error('API Error: Add DID', error);
+      if (error.message.includes('already exists')) {
+        return res.status(409).json({ error: error.message });
+      } else if (error.message.includes('Tenant not found')) {
+        return res.status(404).json({ error: error.message });
+      }
+      res.status(500).json({ error: 'Failed to add DID' });
+    }
+  },
+
+  /**
+   * @api {put} /api/tenants/:domain_name/dids/:did_number Update DID
+   * @apiName UpdateDid
+   * @apiGroup DIDs
+   * @apiDescription Updates an existing DID identified by `did_number` for a given tenant.
+   * @apiParam {String} domain_name Domain name of the tenant.
+   * @apiParam {String} did_number The DID number to update.
+   * @apiParam {Object} updateData Data to update the DID with. Only provided fields will be updated.
+   * @apiParamExample {json} Request-Example:
+   * {
+   * "destination": "sales_group",
+   * "description": "Updated sales line DID"
+   * }
+   * @apiSuccess {Object} did The updated DID object.
+   * @apiSuccessExample {json} Success-Response:
+   * HTTP/1.1 200 OK
+   * { "did_number": "18005551212", "destination": "sales_group", "description": "Updated sales line DID", ... }
+   * @apiError (404 Not Found) NotFound The tenant or DID was not found.
+   * @apiError (500 Internal Server Error) ServerError An error occurred on the server during DID update.
+   */
+  updateDid: async (req, res) => {
+    try {
+      const updatedDid = await tenantService.updateDid(req.params.domain_name, req.params.did_number, req.body);
+      res.status(200).json(updatedDid);
+    } catch (error) {
+      console.error('API Error: Update DID', error);
+      if (error.message.includes('Tenant not found') || error.message.includes('DID not found')) {
+        return res.status(404).json({ error: error.message });
+      }
+      res.status(500).json({ error: 'Failed to update DID' });
+    }
+  },
+
+  /**
+   * @api {delete} /api/tenants/:domain_name/dids/:did_number Delete DID
+   * @apiName DeleteDid
+   * @apiGroup DIDs
+   * @apiDescription Deletes a DID by `did_number` from a tenant.
+   * @apiParam {String} domain_name Domain name of the tenant.
+   * @apiParam {String} did_number The DID number to delete.
+   * @apiSuccess (204 No Content) NoContent DID successfully deleted.
+   * @apiError (404 Not Found) NotFound The tenant or DID was not found for deletion.
+   * @apiError (500 Internal Server Error) ServerError An error occurred on the server during DID deletion.
+   */
+  deleteDid: async (req, res) => {
+    try {
+      const deleted = await tenantService.deleteDid(req.params.domain_name, req.params.did_number);
+      if (!deleted) {
+        return res.status(404).json({ error: 'DID not found for deletion' });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error('API Error: Delete DID', error);
+      if (error.message.includes('Tenant not found') || error.message.includes('DID not found')) {
+        return res.status(404).json({ error: error.message });
+      }
+      res.status(500).json({ error: 'Failed to delete DID' });
+    }
   }
 };
 
