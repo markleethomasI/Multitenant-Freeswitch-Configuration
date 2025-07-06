@@ -6,8 +6,8 @@ const SipClientSchema = new mongoose.Schema(
         user_id: { type: String, required: true },
         password: { type: String, required: true }, // **IMPORTANT: Hash this in a real application!**
         user_context: { type: String, default: "" },
-        vm_enabled: { type: Boolean, default: true },
-        vm_password: { type: String, default: "" },
+        enable_voicemail: { type: Boolean, default: true },
+        voicemail_pin: { type: String, default: "" },
         vm_email: { type: String, default: "" },
         call_forward_unconditional: { type: String, default: "" },
         call_forward_busy: { type: String, default: "" },
