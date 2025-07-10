@@ -79,6 +79,7 @@ const configurationController = {
             <param name="inbound-codec-prefs" value="PCMA,PCMU"/>
             <param name="outbound-codec-prefs" value="PCMA,PCMU"/>
             <param name="rtp-timer-name" value="soft"/>
+            <param name="track-calls" value="true"/>
             <param name="rtp-ip" value="auto"/>
             <param name="sip-ip" value="auto"/>
             <param name="hold-music" value="${defaultHoldMusic}"/>
@@ -139,7 +140,7 @@ xml += `
               ${gateway.register_transport ? `<param name="register-transport" value="${gateway.register_transport}"/>` : ''}
               ${gateway.rtp_secure_media ? `
                             <param name="debug" value="1"/>
-
+            <param name="track-calls" value="true"/>
             <param name="auth-calls" value="false"/>
             <param name="inbound-codec-prefs" value="OPUS,PCMU,PCMA"/>
             <param name="outbound-codec-prefs" value="OPUS,PCMU,PCMA"/>
